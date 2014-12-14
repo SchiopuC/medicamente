@@ -136,7 +136,7 @@ function filtreaza(cat, val) {
 	}
 
 	if (cat === 'Format') {
-		sqlWHERE += ' AND forma LIKE \'%' + val + '%\' ';
+		sqlWHERE += ' AND forma LIKE \'' + val + '\' ';
 	}
 
 	getCatalog();
