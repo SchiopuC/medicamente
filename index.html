@@ -1,0 +1,240 @@
+<html>
+<head>
+<title>Medicamente - Preturi Maximale - Hackathlon Dec 2014 Date Deschise</title>
+<style>
+	body {
+		font-family: "Trebuchet MS", "Verdana", sans-serif;
+		padding: 0;
+		margin: 0;
+		background: url("img/bg70.jpg") no-repeat;
+	    background-size: 100%;
+	}
+	h1 {
+		display: inline;
+	}
+	#content {
+		padding: 0 10px;
+		width: 98%;
+		height: 98%;
+	}
+
+	#search > input { 
+		font-size: 24px;
+	}
+	#q, #resp { 
+		width: 64%;
+	}
+	#resp > b {	
+		font-size: large; 
+	}
+	#resp {
+		height: 80%;
+		overflow: auto;
+	}
+
+	#filtru {
+		width: 26%;
+		height: 60%;
+		position: absolute;
+		top: 38%;
+		right: 78px;
+		line-height: 30px;
+	}
+	#filtru span {
+		font-size: large;
+		font-weight: bold;
+	}
+	.optiune {
+		border: 1px solid #C9AE5D;
+		padding: 3px;
+		display: inline;
+		cursor: pointer;
+	}
+
+	.dci {
+		color: #C0FF33;
+	}
+	
+	#tool > span, .dci {
+		cursor: pointer;
+	}
+
+	#tool {
+		position: absolute;
+		top: 30px;
+		right: 20px;
+	}
+
+	#foot {
+		width: 98%;
+		font-size: small;
+		text-align: center;
+	}
+</style>
+<script src="jquery-2.1.1.min.js"></script>
+</head>
+<body><div id="content">
+  <h1>Pretul <span id="easteregg">Maximal</span> al Medicamentelor autorizate de punere pe piata</h1>
+
+  <form id="search">
+  <input type="text" id="q" placeholder="Nume Medicament sau Substanta Activa" title="Posibila si cautarea partiala"><input type="submit" value="Caut"></form>
+  <div id="resp"></div>
+</div>
+<div id="filtru"></div>
+<div id="tool">
+	<span id="medii">AVG</span>
+</div>
+<script>
+var anmEnd = 'http://193.169.156.200/app/nom1/anm_list.asp?s_cim=';
+var catalogDB = 'a847b387-5f87-421d-97b0-8481f04d1359';
+var catalogAPI = 'http://data.gov.ro/api/action/datastore_search_sql';
+//cod_cnpm, cod_cim, obs, den_produs, forma, concentr, firma, dci, ambalaj, grupa, pret_prod, pret_rid, pret_am, statut_frm, statut_anm, stare 
+var sql, sqlWHERE, sqlORDER;
+var medStat = {
+	MI: 'med. inovativ',
+	MO: 'med. orfan',
+	MG: 'med. generic',
+	MB: 'med. biosimilar',
+	PED: 'med. pediatric'
+}
+var filtru, selectedFilters;
+
+function dciClick(bit){
+	document.getElementById('q').value = bit.toLowerCase();
+	$("#search").submit();
+}
+
+function addDrug(bit){
+	var prefix = '',
+		statutMedicament;
+	if (bit.obs === '!') prefix = "~";
+	if (bit.statut_anm) statutMedicament = 'med. ' + bit.statut_anm;
+	if (bit.statut_frm) statutMedicament = medStat[bit.statut_frm] || bit.statut_frm;
+	/*
+	Pret de producator maximal
+	Pretul de producator maximal pe ambalaj al medicamentului;
+	Pret cu ridicata maximal
+	Pretul cu ridicata maximal (fara TVA) pe ambalaj al medicamentului;
+	Pret cu amanuntul maximal
+	Pretul cu amanuntul maximal (inclusiv TVA) pe ambalaj al medicamentului
+	*/
+	document.getElementById('resp')
+      	.innerHTML+= '<p><a target="_blank" href="' + anmEnd + bit.cod_cim +'" title="detalii ANM">' + bit.den_produs 
+      		+ ' </a> ( <span title="cauta dupa substanta activa" class="dci" onclick="dciClick(\'' + bit.dci + '\')">' + bit.dci + '</span> ) ' 
+      		+ ' <b>' + statutMedicament + '</b> '
+      		+ ' ' + bit.forma + ' <br>'
+      		+ ' <b>' + bit.firma + '</b> <br>'
+      		+ '' + bit.ambalaj + '<br>'
+      		+ '<b>Pret</b>: producator <b>' + prefix+bit.pret_prod + 'lei</b>; '
+      		+ 'ambalaj <b>' + prefix+bit.pret_rid + 'lei</b>; '
+      		+ 'amanunt <b>' + prefix+bit.pret_am + 'lei</b> ' + '</p>';
+}
+
+function filtreaza(cat, val) {
+	if (cat === 'Tara') {
+		sqlWHERE += ' AND firma LIKE \'%' + val + '\' ';
+	}
+
+	if (cat === 'Format') {
+		sqlWHERE += ' AND forma LIKE \'%' + val + '%\' ';
+	}
+
+	getCatalog();
+}
+
+function getCatalog() {
+	$.ajax({
+    	url: catalogAPI,
+    	data: {sql: sql + sqlWHERE + sqlORDER},
+    	success: function(datarecv) {
+			if (datarecv.success !== true) {
+				document.getElementById('resp').innerHTML = 'Eroare conexiune date.gov.ro!';
+				return false;
+			}
+
+			if (datarecv.result.records.length === 0) {
+				document.getElementById('resp').innerHTML = 'Nu s-au gasit medicamente.';
+				return false;
+			}
+			filtru = { 
+				Format: {},
+				Tara: {}
+			}
+			
+			document.getElementById('resp').innerHTML = '';
+			datarecv.result.records.forEach(function(bit){
+				addDrug(bit);
+				filtru.Format[bit.forma]=bit.forma;
+				var ctry = bit.firma.replace(/^.*-\s*/, '');
+				filtru.Tara[ctry]=ctry;
+			});
+			
+			document.getElementById('filtru').innerHTML = '';
+			for (n in filtru) {
+				document.getElementById('filtru').innerHTML+= '<div id="filtru' + n + '"><span>' + n + '</span><br>';
+				for (f in filtru[n]) {
+					document.getElementById('filtru').innerHTML+= '<div class="optiune" onclick="filtreaza(\'' + n + '\', \'' + f + '\')">' + f + '</div><br>';
+				}
+				document.getElementById('filtru').innerHTML+= '</div>';
+			}
+		}
+  	});
+}
+
+$("#easteregg").click(function(){
+	
+	sql = 'SELECT * FROM "' + catalogDB + '" ';
+	sqlWHERE = 'WHERE pret_prod>9999 ';
+	sqlORDER = 'ORDER BY pret_rid DESC';
+	
+	getCatalog();
+});
+
+$("#search").submit(function(event) {
+	event.preventDefault();
+
+	var q = '%' + document.getElementById('q').value
+					.replace(/[^a-z0-9-]/ig, '_') //normalize input
+					.toUpperCase() + '%';
+  
+  	sql = 'SELECT * FROM "' + catalogDB + '" ';
+	sqlWHERE = 'WHERE (den_produs LIKE \'' + q + '\' OR dci LIKE \'' + q + '\') ';
+	sqlORDER = 'ORDER BY pret_rid ASC';
+
+  	getCatalog();
+});
+
+$("#medii").click(function(){
+	sql = 'SELECT ROUND(AVG(pret_rid)) as medie, firma FROM "' + catalogDB + '" ';
+	sqlWHERE = 'WHERE pret_rid>450 ';
+	sqlORDER = 'GROUP BY firma ORDER BY medie DESC';
+	console.log(sql);
+	$.ajax({
+    	url: catalogAPI,
+    	data: {sql: sql + sqlWHERE + sqlORDER},
+    	success: function(datarecv) {
+			if (datarecv.success !== true) {
+				document.getElementById('resp').innerHTML = 'Eroare conexiune date.gov.ro!';
+				return false;
+			}
+
+			if (datarecv.result.records.length === 0) {
+				document.getElementById('resp').innerHTML = 'Nu s-au gasit date.';
+				return false;
+			}
+
+			document.getElementById('resp').innerHTML = '';
+			datarecv.result.records.forEach(function(bit){
+				document.getElementById('resp').innerHTML += bit.firma +' &mdash; <b> '+ bit.medie+'lei</b>/ambalaj<br>';
+			});
+		}
+	});
+
+});
+</script>
+<div id="foot">
+    Creeat in cadrul <a href="http://bv2014.datedeschise.ro/">BV2014 Hackathlon datedeschise.ro</a> &mdash;
+	Surse de date: <a href="http://data.gov.ro/dataset/catalogul-national-al-preturilor-medicamentelor-autorizate-de-punere-pe-piata">data.gov.ro</a>, 
+	<a href="http://anm.ro/">anm.ro</a> &mdash; 
+	Licenta: <a href="http://opensource.org/licenses/MIT">MIT</a> 2014 Schiopu Claudiu
+</div></body></html>
