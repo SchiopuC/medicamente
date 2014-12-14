@@ -94,6 +94,7 @@ var medStat = {
 	MI: 'med. inovativ',
 	MO: 'med. orfan',
 	MG: 'med. generic',
+	MP: 'med. generic', //estimat
 	MB: 'med. biosimilar',
 	PED: 'med. pediatric'
 }
@@ -110,6 +111,8 @@ function addDrug(bit){
 	if (bit.obs === '!') prefix = "~";
 	if (bit.statut_anm) statutMedicament = 'med. ' + bit.statut_anm;
 	if (bit.statut_frm) statutMedicament = medStat[bit.statut_frm] || bit.statut_frm;
+	if (!statutMedicament) statutMedicament = '';
+	
 	/*
 	Pret de producator maximal
 	Pretul de producator maximal pe ambalaj al medicamentului;
@@ -122,7 +125,7 @@ function addDrug(bit){
       	.innerHTML+= '<p><a target="_blank" href="' + anmEnd + bit.cod_cim +'" title="detalii ANM">' + bit.den_produs 
       		+ ' </a> ( <span title="cauta dupa substanta activa" class="dci" onclick="dciClick(\'' + bit.dci + '\')">' + bit.dci + '</span> ) ' 
       		+ ' <b>' + statutMedicament + '</b> '
-      		+ ' ' + bit.forma + ' <br>'
+      		+ ' ' + bit.forma + ' ' + bit.concentr + '<br>'
       		+ ' <b>' + bit.firma + '</b> <br>'
       		+ '' + bit.ambalaj + '<br>'
       		+ '<b>Pret</b>: producator <b>' + prefix+bit.pret_prod + 'lei</b>; '
@@ -136,7 +139,7 @@ function filtreaza(cat, val) {
 	}
 
 	if (cat === 'Format') {
-		sqlWHERE += ' AND forma LIKE \'' + val + '\' ';
+		sqlWHERE += ' AND forma LIKE \'' + val + '%\' ';
 	}
 
 	getCatalog();
@@ -171,14 +174,24 @@ function getCatalog() {
 			
 			document.getElementById('filtru').innerHTML = '';
 			for (n in filtru) {
+				if (Object.keys(filtru[n]).length < 2) continue;
+
 				document.getElementById('filtru').innerHTML+= '<div id="filtru' + n + '"><span>' + n + '</span><br>';
 				for (f in filtru[n]) {
 					document.getElementById('filtru').innerHTML+= '<div class="optiune" onclick="filtreaza(\'' + n + '\', \'' + f + '\')">' + f + '</div><br>';
 				}
 				document.getElementById('filtru').innerHTML+= '</div>';
 			}
+
+			if (/\)\s*AND/.test(sqlWHERE)) {
+				document.getElementById('filtru').innerHTML+= '<button onclick="resetBtn()">Sterge filtrele</button>';
+			}
 		}
   	});
+}
+
+function resetBtn() {
+	$("#search").submit();
 }
 
 $("#easteregg").click(function(){
