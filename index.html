@@ -235,7 +235,7 @@ $("#medii").click(function(){
 				return false;
 			}
 
-			document.getElementById('resp').innerHTML = '';
+			document.getElementById('resp').innerHTML = '<h3>Pretul mediu per ambalaj pe companii</h3>';
 			datarecv.result.records.forEach(function(bit){
 				document.getElementById('resp').innerHTML += bit.firma +' &mdash; <b> '+ bit.medie+'lei</b>/ambalaj<br>';
 			});
@@ -245,7 +245,7 @@ $("#medii").click(function(){
 });
 </script>
 <div id="foot">
-    Creeat in cadrul <a href="http://bv2014.datedeschise.ro/">BV2014 Hackathlon datedeschise.ro</a> &mdash;
+    Creat in cadrul <a href="http://bv2014.datedeschise.ro/">BV2014 Hackathlon datedeschise.ro</a> &mdash;
 	Surse de date: <a href="http://data.gov.ro/dataset/catalogul-national-al-preturilor-medicamentelor-autorizate-de-punere-pe-piata">data.gov.ro</a>, 
 	<a href="http://www.anm.ro/">anm.ro</a> &mdash; 
 	Licenta: <a href="http://opensource.org/licenses/MIT">MIT</a> 2014 <a href="https://github.com/SchiopuC/medicamente/">Schiopu Claudiu</a>
