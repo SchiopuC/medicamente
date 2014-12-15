@@ -1,49 +1,252 @@
-<!DOCTYPE html>
 <html>
+<head>
+<title>Medicamente - Preturi Maximale - Hackathlon Dec 2014 Date Deschise</title>
+<style>
+	body {
+		font-family: "Trebuchet MS", "Verdana", sans-serif;
+		padding: 0;
+		margin: 0;
+		background: url("bg.jpg") no-repeat;
+	    background-size: 100%;
+	}
+	h1 {
+		display: inline;
+	}
+	#content {
+		padding: 0 10px;
+		width: 98%;
+		height: 98%;
+	}
 
-  <head>
-    <meta charset='utf-8'>
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="description" content="Medicamente : Aplicatie de cautare medicamente si alternative cu afisarea pretului maximal">
+	#search > input { 
+		font-size: 24px;
+	}
+	#q, #resp { 
+		width: 64%;
+	}
+	#resp > b {	
+		font-size: large; 
+	}
+	#resp {
+		height: 80%;
+		overflow: auto;
+	}
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+	#filtru {
+		width: 26%;
+		height: 60%;
+		position: absolute;
+		top: 38%;
+		right: 78px;
+		line-height: 30px;
+	}
+	#filtru span {
+		font-size: large;
+		font-weight: bold;
+	}
+	.optiune {
+		border: 1px solid #C9AE5D;
+		padding: 3px;
+		display: inline;
+		cursor: pointer;
+	}
 
-    <title>Medicamente</title>
-  </head>
+	.dci {
+		color: #C0FF33;
+	}
+	
+	#tool > span, .dci {
+		cursor: pointer;
+	}
 
-  <body>
+	#tool {
+		position: absolute;
+		top: 30px;
+		right: 20px;
+	}
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/SchiopuC/medicamente">View on GitHub</a>
+	#foot {
+		margin-left: 10px;
+		font-size: small;
+	}
+</style>
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+</head>
+<body><div id="content">
+  <h1>Pretul <span id="easteregg">Maximal</span> al Medicamentelor autorizate de punere pe piata</h1>
 
-          <h1 id="project_title">Medicamente</h1>
-          <h2 id="project_tagline">Aplicatie de cautare medicamente si alternative cu afisarea pretului maximal</h2>
+  <form id="search">
+  <input type="text" id="q" placeholder="Nume Medicament sau Substanta Activa" title="Posibila si cautarea partiala"><input type="submit" value="Caut"></form>
+  <div id="resp"></div>
+</div>
+<div id="filtru"></div>
+<div id="tool">
+	<span id="medii">AVG</span>
+</div>
+<script>
+var anmEnd = 'http://193.169.156.200/app/nom1/anm_list.asp?s_cim=';
+var catalogDB = 'a847b387-5f87-421d-97b0-8481f04d1359';
+var catalogAPI = 'http://data.gov.ro/api/action/datastore_search_sql';
+//cod_cnpm, cod_cim, obs, den_produs, forma, concentr, firma, dci, ambalaj, grupa, pret_prod, pret_rid, pret_am, statut_frm, statut_anm, stare 
+var sql, sqlWHERE, sqlORDER;
+var medStat = {
+	MI: 'med. inovativ',
+	MO: 'med. orfan',
+	MG: 'med. generic',
+	MP: 'med. generic', //estimat
+	MB: 'med. biosimilar',
+	PED: 'med. pediatric'
+}
+var filtru, selectedFilters;
 
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/SchiopuC/medicamente/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/SchiopuC/medicamente/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
+function dciClick(bit){
+	document.getElementById('q').value = bit.toLowerCase();
+	$("#search").submit();
+}
 
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <p>bv2014</p>
-      </section>
-    </div>
+function addDrug(bit){
+	var prefix = '',
+		statutMedicament;
+	if (bit.obs === '!') prefix = "~";
+	if (bit.statut_anm) statutMedicament = 'med. ' + bit.statut_anm;
+	if (bit.statut_frm) statutMedicament = medStat[bit.statut_frm] || bit.statut_frm;
+	if (!statutMedicament) statutMedicament = '';
+	
+	/*
+	Pret de producator maximal
+	Pretul de producator maximal pe ambalaj al medicamentului;
+	Pret cu ridicata maximal
+	Pretul cu ridicata maximal (fara TVA) pe ambalaj al medicamentului;
+	Pret cu amanuntul maximal
+	Pretul cu amanuntul maximal (inclusiv TVA) pe ambalaj al medicamentului
+	*/
+	document.getElementById('resp')
+      	.innerHTML+= '<p><a target="_blank" href="' + anmEnd + bit.cod_cim +'" title="detalii ANM">' + bit.den_produs 
+      		+ ' </a> ( <span title="cauta dupa substanta activa" class="dci" onclick="dciClick(\'' + bit.dci + '\')">' + bit.dci + '</span> ) ' 
+      		+ ' <b>' + statutMedicament + '</b> '
+      		+ ' ' + bit.forma + '<br>'
+      		+ ' <b>' + bit.firma + '</b> <br>'
+      		+ '' + bit.ambalaj + '<br>'
+      		+ '<b>Pret</b>: producator <b>' + prefix+bit.pret_prod + 'lei</b>; '
+      		+ 'per ambalaj <b>' + prefix+bit.pret_rid + 'lei</b>; '
+      		+ 'cu amanuntul <b>' + prefix+bit.pret_am + 'lei</b> ' + '</p>';
+}
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">Medicamente maintained by <a href="https://github.com/SchiopuC">SchiopuC</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
+function filtreaza(cat, val) {
+	if (cat === 'Tara') {
+		sqlWHERE += ' AND firma LIKE \'%' + val + '\' ';
+	}
 
-    
+	if (cat === 'Format') {
+		sqlWHERE += ' AND forma LIKE \'' + val + '%\' ';
+	}
 
-  </body>
-</html>
+	getCatalog();
+}
+
+function getCatalog() {
+	$.ajax({
+    	url: catalogAPI,
+    	data: {sql: sql + sqlWHERE + sqlORDER},
+    	success: function(datarecv) {
+			if (datarecv.success !== true) {
+				document.getElementById('resp').innerHTML = 'Eroare conexiune date.gov.ro!';
+				return false;
+			}
+
+			if (datarecv.result.records.length === 0) {
+				document.getElementById('resp').innerHTML = 'Nu s-au gasit medicamente.';
+				return false;
+			}
+			filtru = { 
+				Format: {},
+				Tara: {}
+			}
+			
+			document.getElementById('resp').innerHTML = '';
+			datarecv.result.records.forEach(function(bit){
+				addDrug(bit);
+				filtru.Format[bit.forma]=bit.forma;
+				var ctry = bit.firma.replace(/^.*-\s*/, '');
+				filtru.Tara[ctry]=ctry;
+			});
+			
+			document.getElementById('filtru').innerHTML = '';
+			for (n in filtru) {
+				if (Object.keys(filtru[n]).length < 2) continue;
+
+				document.getElementById('filtru').innerHTML+= '<div id="filtru' + n + '"><span>' + n + '</span><br>';
+				for (f in filtru[n]) {
+					document.getElementById('filtru').innerHTML+= '<div class="optiune" onclick="filtreaza(\'' + n + '\', \'' + f + '\')">' + f + '</div><br>';
+				}
+				document.getElementById('filtru').innerHTML+= '</div>';
+			}
+
+			if (/\)\s*AND/.test(sqlWHERE)) {
+				document.getElementById('filtru').innerHTML+= '<button onclick="resetBtn()">Sterge filtrele</button>';
+			}
+		}
+  	});
+}
+
+function resetBtn() {
+	$("#search").submit();
+}
+
+$("#easteregg").click(function(){
+	
+	sql = 'SELECT * FROM "' + catalogDB + '" ';
+	sqlWHERE = 'WHERE pret_prod>9999 ';
+	sqlORDER = 'ORDER BY pret_rid DESC';
+	
+	getCatalog();
+});
+
+$("#search").submit(function(event) {
+	event.preventDefault();
+
+	var q = '%' + document.getElementById('q').value
+					.replace(/[^a-z0-9-]/ig, '_') //normalize input
+					.toUpperCase() + '%';
+  
+  	sql = 'SELECT * FROM "' + catalogDB + '" ';
+	sqlWHERE = 'WHERE (den_produs LIKE \'' + q + '\' OR dci LIKE \'' + q + '\') ';
+	sqlORDER = 'ORDER BY pret_rid ASC';
+
+  	getCatalog();
+});
+
+$("#medii").click(function(){
+	sql = 'SELECT ROUND(AVG(pret_rid)) as medie, firma FROM "' + catalogDB + '" ';
+	sqlWHERE = 'WHERE pret_rid>450 ';
+	sqlORDER = 'GROUP BY firma ORDER BY medie DESC';
+	console.log(sql);
+	$.ajax({
+    	url: catalogAPI,
+    	data: {sql: sql + sqlWHERE + sqlORDER},
+    	success: function(datarecv) {
+			if (datarecv.success !== true) {
+				document.getElementById('resp').innerHTML = 'Eroare conexiune date.gov.ro!';
+				return false;
+			}
+
+			if (datarecv.result.records.length === 0) {
+				document.getElementById('resp').innerHTML = 'Nu s-au gasit date.';
+				return false;
+			}
+
+			document.getElementById('resp').innerHTML = '';
+			datarecv.result.records.forEach(function(bit){
+				document.getElementById('resp').innerHTML += bit.firma +' &mdash; <b> '+ bit.medie+'lei</b>/ambalaj<br>';
+			});
+		}
+	});
+
+});
+</script>
+<div id="foot">
+    Creeat in cadrul <a href="http://bv2014.datedeschise.ro/">BV2014 Hackathlon datedeschise.ro</a> &mdash;
+	Surse de date: <a href="http://data.gov.ro/dataset/catalogul-national-al-preturilor-medicamentelor-autorizate-de-punere-pe-piata">data.gov.ro</a>, 
+	<a href="http://www.anm.ro/">anm.ro</a> &mdash; 
+	Licenta: <a href="http://opensource.org/licenses/MIT">MIT</a> 2014 <a href="https://github.com/SchiopuC/medicamente/">Schiopu Claudiu</a>
+</div></body></html>
