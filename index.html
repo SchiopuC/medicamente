@@ -66,6 +66,7 @@
 	}
 
 	#foot {
+		margin-left: 10px;
 		font-size: small;
 	}
 </style>
@@ -127,8 +128,8 @@ function addDrug(bit){
       		+ ' <b>' + bit.firma + '</b> <br>'
       		+ '' + bit.ambalaj + '<br>'
       		+ '<b>Pret</b>: producator <b>' + prefix+bit.pret_prod + 'lei</b>; '
-      		+ 'ambalaj <b>' + prefix+bit.pret_rid + 'lei</b>; '
-      		+ 'amanunt <b>' + prefix+bit.pret_am + 'lei</b> ' + '</p>';
+      		+ 'per ambalaj <b>' + prefix+bit.pret_rid + 'lei</b>; '
+      		+ 'cu amanuntul <b>' + prefix+bit.pret_am + 'lei</b> ' + '</p>';
 }
 
 function filtreaza(cat, val) {
@@ -246,6 +247,6 @@ $("#medii").click(function(){
 <div id="foot">
     Creeat in cadrul <a href="http://bv2014.datedeschise.ro/">BV2014 Hackathlon datedeschise.ro</a> &mdash;
 	Surse de date: <a href="http://data.gov.ro/dataset/catalogul-national-al-preturilor-medicamentelor-autorizate-de-punere-pe-piata">data.gov.ro</a>, 
-	<a href="http://anm.ro/">anm.ro</a> &mdash; 
+	<a href="http://www.anm.ro/">anm.ro</a> &mdash; 
 	Licenta: <a href="http://opensource.org/licenses/MIT">MIT</a> 2014 <a href="https://github.com/SchiopuC/medicamente/">Schiopu Claudiu</a>
 </div></body></html>
